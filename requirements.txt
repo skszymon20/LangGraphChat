@@ -14,7 +14,7 @@ langgraph-checkpoint-sqlite
 langchain-chroma
 chromadb
 pypdf
-doc2txt
+docx2txt
 langchain-tavily
 tavily-python
 sqlalchemy
