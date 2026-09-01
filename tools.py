@@ -1,8 +1,12 @@
 import math
+from typing import Annotated
 from dotenv import load_dotenv
+# from fastapi import Depends
 from langchain_core.tools import tool
 from langchain_tavily import TavilySearch
 from rag import retrieve_from_rag
+from database import get_db, engine
+from sqlalchemy.orm import Session
 
 
 load_dotenv()
@@ -48,6 +52,7 @@ def calculator(expression: str) -> str:
     except Exception as e:
         return f"Error evaluating expression: {e}"
 
+
 @tool
 def remember_this(info: str) -> str:
     """
@@ -58,7 +63,7 @@ def remember_this(info: str) -> str:
     >>> remember_this("I have a meeting at 3 PM tomorrow.")
     'Information saved successfully.'
     """
-    save_long_term_memory(CURRENT_THREAD_ID, info)
+    save_to_long_term_memory(CURRENT_THREAD_ID, info)
     return "Information saved successfully."
 
 @tool

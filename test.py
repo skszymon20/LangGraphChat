@@ -1,9 +1,7 @@
 from agent import get_agent
 from langchain_core.messages import SystemMessage, HumanMessage
-from models import init_database
 
 
-init_database()
 agent = get_agent()
 cfg = {
     "configurable": {
