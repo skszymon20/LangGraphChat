@@ -12,3 +12,7 @@ session_local = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 class Base(DeclarativeBase):
     pass
+
+def get_db():
+    with session_local() as db:
+        yield db
