@@ -216,3 +216,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+chroma_vector_storage/
+.vscode/
+data/
+old_chrma_db/

@@ -2,26 +2,23 @@ from pathlib import Path
 from typing import List
 from dotenv import load_dotenv
 import os
-
-load_dotenv()
-
 from langchain_chroma import Chroma
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-
 from pypdf import PdfReader
 import docx2txt
 
-Path("uploads").mkdir(exist_ok=True)
-Path("chroma_db").mkdir(exist_ok=True)
+
+load_dotenv()
+Path("chroma_vector_storage").mkdir(exist_ok=True)
 
 embeddings = GoogleGenerativeAIEmbeddings(model="gemini-embedding-001")
 
 vectorstore = Chroma(
     collection_name="documents",
     embedding_function=embeddings,
-    persist_directory="chroma_db"
+    persist_directory="chroma_vector_storage"
 )
 
 def read_file_text(file_path: str) -> str:
