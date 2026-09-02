@@ -1,5 +1,5 @@
 from datetime import UTC, datetime
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
+from sqlalchemy import Integer, String, Text, DateTime, ForeignKey, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from database import Base
 
@@ -32,6 +32,20 @@ class Message(Base):
     content: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
     thread: Mapped[Thread] = relationship(back_populates="messages")
+    tool_invocations: Mapped[list[ToolInvocation]] = relationship(
+        back_populates="message", cascade="all, delete-orphan"
+    )
+
+class ToolInvocation(Base):
+    __tablename__ = "tools"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    message_id: Mapped[int] = mapped_column(Integer, ForeignKey("messages.id"), index=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    arguments: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    result: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    message: Mapped[Message] = relationship(back_populates="tool_invocations")
 
 class LongTermMemory(Base):
     __tablename__ = "long_term_memories"

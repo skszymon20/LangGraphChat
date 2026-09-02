@@ -6,6 +6,7 @@ from pathlib import Path
 import uvicorn
 from fastapi import Depends, FastAPI, Request, UploadFile, File, Form
 from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from langchain_core.messages import HumanMessage, AIMessage, AIMessageChunk, ToolMessage
 from agent import get_agent
@@ -26,6 +27,7 @@ load_dotenv()
 Base.metadata.create_all(bind=engine)
 app = FastAPI()
 templates = Jinja2Templates(directory="templates/")
+app.mount("/static", StaticFiles(directory="static"), name="static")
 Path("data").mkdir(exist_ok=True)
 Path("data/rag_files").mkdir(exist_ok=True)
 
@@ -68,7 +70,8 @@ def create_thread(thread: ThreadCreate, db: Annotated[Session, Depends(get_db)])
         content=thread.first_message
     )
     new_thread.messages.append(message)
-    new_assistant_message = assistant_respond(message)
+    new_assistant_message, tool_invocations = assistant_respond(message)
+    new_assistant_message.tool_invocations = tool_invocations
     new_thread.messages.append(new_assistant_message)
     
     db.add(new_thread)
@@ -103,10 +106,32 @@ def assistant_respond(message: models.Message):
             "thread_id": message.thread_id
         }
     }
+    previous_message_count = len(agent.get_state(cfg).values.get("messages", []))
     response = agent.invoke(
         {'messages': [HumanMessage(message.content)]},
         config=cfg,
     )
+    current_messages = response["messages"][previous_message_count:]
+    tool_messages = {
+        item.tool_call_id: item
+        for item in current_messages
+        if isinstance(item, ToolMessage)
+    }
+    tool_invocations = []
+    for item in current_messages:
+        if not isinstance(item, AIMessage):
+            continue
+        for tool_call in item.tool_calls:
+            tool_message = tool_messages.get(tool_call["id"])
+            if tool_message:
+                result = tool_message.content
+                if not isinstance(result, str):
+                    result = json.dumps(result)
+                tool_invocations.append(models.ToolInvocation(
+                    name=tool_call["name"],
+                    arguments=tool_call.get("args", {}),
+                    result=result,
+                ))
     response_content = response['messages'][-1].content
     if response_content and len(response_content) > 0 and 'text' in response_content[0]:
         assistant_reply = response_content[0]['text']
@@ -117,7 +142,7 @@ def assistant_respond(message: models.Message):
         role="assistant",
         content=assistant_reply
     )
-    return new_assistant_message
+    return new_assistant_message, tool_invocations
 
 @app.post("/api/messages", response_model=List[MessageResponse], status_code=status.HTTP_201_CREATED)
 def send_message(message: MessageCreate, db: Annotated[Session, Depends(get_db)]):
@@ -137,7 +162,8 @@ def send_message(message: MessageCreate, db: Annotated[Session, Depends(get_db)]
     db.commit()
     db.refresh(new_message)
 
-    new_assistant_message = assistant_respond(new_message)
+    new_assistant_message, tool_invocations = assistant_respond(new_message)
+    new_assistant_message.tool_invocations = tool_invocations
 
     db.add(new_assistant_message)
     db.commit()

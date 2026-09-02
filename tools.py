@@ -2,7 +2,6 @@ import math
 from sqlalchemy import select
 from typing import Annotated
 from dotenv import load_dotenv
-# from fastapi import Depends
 from langchain_core.tools import tool
 from langchain_tavily import TavilySearch
 from rag import retrieve_from_rag
