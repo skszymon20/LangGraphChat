@@ -70,8 +70,8 @@
             return String(value).replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[character]);
         }
 
-        function renderThreads(threads) {
-            threads = threads;
+        function renderThreads(nextThreads) {
+            threads = nextThreads;
             threadList.innerHTML = "";
             [...threads].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at)).forEach(thread => {
                 const button = document.createElement("button");
