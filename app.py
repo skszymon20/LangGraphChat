@@ -77,6 +77,17 @@ def create_thread(thread: ThreadCreate, db: Annotated[Session, Depends(get_db)])
 
     return new_thread
 
+@app.delete("/api/threads/{thread_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_thread(thread_id: str, db: Annotated[Session, Depends(get_db)]):
+    result = db.execute(
+        select(models.Thread).where(models.Thread.id == thread_id)
+    )
+    thread = result.scalars().first()
+    if not thread:
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"detail": "Thread not found"})
+    db.delete(thread)
+    db.commit()
+
 @app.get("/api/messages/{thread_id}", response_model=List[MessageResponse])
 def get_messages(thread_id: str, db: Annotated[Session, Depends(get_db)]):
     messages = db.execute(
@@ -107,8 +118,6 @@ def assistant_respond(message: models.Message):
         content=assistant_reply
     )
     return new_assistant_message
-
-
 
 @app.post("/api/messages", response_model=List[MessageResponse], status_code=status.HTTP_201_CREATED)
 def send_message(message: MessageCreate, db: Annotated[Session, Depends(get_db)]):

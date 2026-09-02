@@ -1,4 +1,5 @@
 import math
+from sqlalchemy import select
 from typing import Annotated
 from dotenv import load_dotenv
 # from fastapi import Depends
@@ -7,6 +8,7 @@ from langchain_tavily import TavilySearch
 from rag import retrieve_from_rag
 from database import get_db, engine
 from sqlalchemy.orm import Session
+import models
 
 
 load_dotenv()
@@ -52,7 +54,6 @@ def calculator(expression: str) -> str:
     except Exception as e:
         return f"Error evaluating expression: {e}"
 
-
 @tool
 def remember_this(info: str) -> str:
     """
@@ -63,7 +64,13 @@ def remember_this(info: str) -> str:
     >>> remember_this("I have a meeting at 3 PM tomorrow.")
     'Information saved successfully.'
     """
-    save_to_long_term_memory(CURRENT_THREAD_ID, info)
+    db: Session = next(get_db())
+    new_memory = models.LongTermMemory(
+        thread_id=CURRENT_THREAD_ID,
+        memory=info
+    )
+    db.add(new_memory)
+    db.commit()
     return "Information saved successfully."
 
 @tool
@@ -76,7 +83,16 @@ def recall_memory() -> str:
     >>> recall_memory()
     'I have a meeting at 3 PM tomorrow.'
     """
-    return search_long_term_memory(CURRENT_THREAD_ID)
+    db: Session = next(get_db())
+    result = db.execute(
+        select(models.LongTermMemory).where(models.LongTermMemory.thread_id == CURRENT_THREAD_ID).order_by(models.LongTermMemory.created_at.desc())
+    )
+    memories = result.scalars().all()
+    if not memories:
+        return "No memories found."
+    out_str = "Here are the memories I have recalled:\n"
+    out_str += "\n".join([f" - {memory.memory}" for memory in memories])
+    return out_str
 
 
 @tool
