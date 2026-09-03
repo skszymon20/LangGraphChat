@@ -61,7 +61,6 @@ class RAGFile(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     file_name: Mapped[str] = mapped_column(String(255), nullable=False)  # NOTE 255 - it is a common max length for file names.
-    added_to_vector_storage: Mapped[bool] = mapped_column(default=False)
     thread_id: Mapped[str] = mapped_column(String(36), ForeignKey("threads.id"), index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
     thread: Mapped[Thread] = relationship(back_populates="rag_files")

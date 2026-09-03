@@ -38,6 +38,7 @@ def calculator(expression: str) -> str:
     >>> calculator("math.sqrt(16)")
     '4.0'
     """
+    # NOTE not fully safe
     try:
         allowed_expressions = {
             "math": math,

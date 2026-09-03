@@ -111,9 +111,10 @@
             input.value = "";
             if (chat.querySelector(".empty")) chat.innerHTML = "";
             renderMessage({ role: "user", content: message });
-            const activity = document.createElement("div");
-            activity.className = "tool-use";
-            activity.textContent = "Generating response...";
+            const activity = document.createElement("article");
+            activity.className = "message assistant activity";
+            activity.innerHTML = `<div class="avatar">AI</div><div class="message-content"></div>`;
+            activity.querySelector(".message-content").textContent = "Generating response...";
             chat.appendChild(activity);
             chat.scrollTop = chat.scrollHeight;
             status.textContent = "Thinking";
@@ -127,7 +128,7 @@
                 renderThreads(await getThreads());
                 status.textContent = "Ready";
             } catch (error) {
-                activity.textContent = error.message;
+                activity.querySelector(".message-content").textContent = error.message;
                 activity.style.color = "#b84b31";
                 status.textContent = "Error";
             } finally {
