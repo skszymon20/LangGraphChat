@@ -21,6 +21,7 @@ import models
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from agent import get_agent
+from rag import delete_chroma_vector_storage
 
 
 load_dotenv()
@@ -88,6 +89,19 @@ def delete_thread(thread_id: str, db: Annotated[Session, Depends(get_db)]):
     thread = result.scalars().first()
     if not thread:
         return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"detail": "Thread not found"})
+
+    # delete chroma_vector_storage part which relates to the thread_id
+    delete_chroma_vector_storage(thread_id)
+
+    # delete the files itself.
+    # files are located in data/rag_files
+    # in db data/history.db there is table rag_files which has file_name and thread_id
+    rag_files_directory = Path("data/rag_files").resolve()
+    for rag_file in thread.rag_files:
+        file_path = (rag_files_directory / rag_file.file_name).resolve()
+        if rag_files_directory in file_path.parents:
+            file_path.unlink(missing_ok=True)
+    
     db.delete(thread)
     db.commit()
 

@@ -76,3 +76,9 @@ def retrieve_from_rag(query: str, thread_id: str, top_k: int = 5) -> str:
         return '\n\n'.join([f"Source {i}: {result.metadata.get('source', 'Unknown')}\n{result.page_content}" for i, result in enumerate(results, start=1)])
     except Exception as e:
         return f"Error retrieving documents from RAG: {e}"
+
+def delete_chroma_vector_storage(thread_id: str) -> None:
+    """Delete all RAG documents and embeddings belonging to a thread."""
+    if not thread_id:
+        raise ValueError("thread_id must not be empty")
+    vectorstore.delete(where={"thread_id": thread_id})
