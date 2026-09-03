@@ -113,7 +113,7 @@
             renderMessage({ role: "user", content: message });
             const activity = document.createElement("div");
             activity.className = "tool-use";
-            activity.textContent = "Working with tools...";
+            activity.textContent = "Generating response...";
             chat.appendChild(activity);
             chat.scrollTop = chat.scrollHeight;
             status.textContent = "Thinking";
