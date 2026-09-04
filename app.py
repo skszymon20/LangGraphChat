@@ -43,11 +43,6 @@ async def home(request: Request):
         context={}  # NOTE following not working: {"title": "LangGraphChat", "welcome_msg": "Hello World! How can I help you today?"}
     )
 
-@app.post("/chat")
-def chat_endpoint(data: ChatMessage):
-    # Simple reply logic. Replace with your AI pipeline.
-    return {"reply": f"Echo: {data.message}"}
-
 @app.get("/api/threads", response_model=List[ThreadResponse])
 def get_threads(db: Annotated[Session, Depends(get_db)]):
     threads = db.execute(select(models.Thread)).scalars().all()
@@ -79,6 +74,11 @@ def create_thread(thread: ThreadCreate, db: Annotated[Session, Depends(get_db)])
     db.commit()
     db.refresh(new_thread)
 
+    # update thread's updated_at timestamp
+    new_thread.updated_at = new_assistant_message.created_at
+    db.commit()
+    db.refresh(new_thread)
+
     return new_thread
 
 @app.delete("/api/threads/{thread_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -100,7 +100,7 @@ def delete_thread(thread_id: str, db: Annotated[Session, Depends(get_db)]):
     for rag_file in thread.rag_files:
         file_path = (rag_files_directory / rag_file.file_name).resolve()
         if rag_files_directory in file_path.parents:
-            file_path.unlink(missing_ok=True)
+            file_path.unlink()  # NOTE probably missing_ok not needed. WAS: (missing_ok=True)
     
     db.delete(thread)
     db.commit()
@@ -142,6 +142,11 @@ async def upload_file(
         db.add(rag_file)
         db.commit()
         db.refresh(rag_file)
+
+        # update thread's updated_at timestamp
+        thread.updated_at = rag_file.created_at
+        db.commit()
+
         return rag_file
     except HTTPException:
         raise
@@ -209,7 +214,7 @@ def send_message(message: MessageCreate, db: Annotated[Session, Depends(get_db)]
     # Check if the thread exists
     thread = db.execute(
         select(models.Thread).where(models.Thread.id == message.thread_id)
-    ).first()
+    ).scalars().first()
     if not thread:
         return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"detail": "Thread not found"})
 
@@ -228,6 +233,10 @@ def send_message(message: MessageCreate, db: Annotated[Session, Depends(get_db)]
     db.add(new_assistant_message)
     db.commit()
     db.refresh(new_assistant_message)
+
+    # update thread's updated_at timestamp
+    thread.updated_at = new_assistant_message.created_at
+    db.commit()
 
     return [new_message, new_assistant_message]
 
