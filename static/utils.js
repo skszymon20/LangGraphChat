@@ -12,6 +12,9 @@ export async function request(path, options = {}) {
 
 export const getThreads = () => request("/api/threads");
 export const getMessages = (threadId) => request(`/api/messages/${threadId}`);
+export const deleteThread = (threadId) => request(`/api/threads/${threadId}`, {
+    method: "DELETE",
+});
 export const createThread = (message) => request("/api/threads", {
     method: "POST",
     body: JSON.stringify({ first_message: message }),

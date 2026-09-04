@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LangGraphChat</title>
-    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="/static/styles.css?v=2">
 </head>
 <body>
     <div class="app">
@@ -30,7 +30,7 @@
         </main>
     </div>
     <script type="module">
-        import { createThread, formatDate, getMessages, getThreads, sendMessage } from "/static/utils.js";
+        import { createThread, deleteThread, formatDate, getMessages, getThreads, sendMessage } from "/static/utils.js?v=2";  // Cache busting with version query parameter (?v=2)
 
         const chat = document.querySelector("#chat");
         const threadList = document.querySelector("#threadList");
@@ -74,13 +74,47 @@
             threads = nextThreads;
             threadList.innerHTML = "";
             [...threads].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at)).forEach(thread => {
-                const button = document.createElement("button");
-                button.className = `thread ${thread.id === activeThread ? "active" : ""}`;
-                button.textContent = thread.title;
-                button.title = `${thread.title} - ${formatDate(thread.updated_at)}`;
-                button.onclick = () => selectThread(thread.id, thread.title);
-                threadList.appendChild(button);
+                const row = document.createElement("div");
+                row.className = "thread-row";
+
+                const selectButton = document.createElement("button");
+                selectButton.className = `thread ${thread.id === activeThread ? "active" : ""}`;
+                selectButton.textContent = thread.title;
+                selectButton.title = `${thread.title} - ${formatDate(thread.updated_at)}`;
+                selectButton.onclick = () => selectThread(thread.id, thread.title);
+
+                const deleteButton = document.createElement("button");
+                deleteButton.className = "delete-thread";
+                deleteButton.type = "button";
+                deleteButton.textContent = "Delete";
+                deleteButton.title = `Delete ${thread.title}`;
+                deleteButton.setAttribute("aria-label", `Delete ${thread.title}`);
+                deleteButton.onclick = event => {
+                    event.stopPropagation();
+                    removeThread(thread);
+                };
+
+                row.append(selectButton, deleteButton);
+                threadList.appendChild(row);
             });
+        }
+
+        async function removeThread(thread) {
+            if (!window.confirm(`Delete "${thread.title}"? This cannot be undone.`)) return;
+            status.textContent = "Deleting";
+            try {
+                await deleteThread(thread.id);
+                threads = threads.filter(item => item.id !== thread.id);
+                if (activeThread === thread.id) {
+                    activeThread = null;
+                    title.textContent = "New conversation";
+                    showEmpty();
+                }
+                renderThreads(threads);
+                status.textContent = "Ready";
+            } catch (error) {
+                status.textContent = error.message;
+            }
         }
 
         async function selectThread(threadId, threadTitle) {
