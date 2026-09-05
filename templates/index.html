@@ -44,6 +44,8 @@
         let threads = [];
         let busy = false;
 
+        const delay = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
+
         function resizeMessageInput() {
             input.style.height = "auto";
             const maxHeight = 180;
@@ -80,6 +82,15 @@
                 : "";
             item.innerHTML = `<div class="avatar">${label}</div><div class="message-content">${escapeHtml(message.content)}${tools}</div>`;
             chat.appendChild(item);
+        }
+
+        function renderGeneratingResponse() {
+            const activity = document.createElement("article");
+            activity.className = "message assistant activity";
+            activity.innerHTML = `<div class="avatar">AI</div><div class="message-content"></div>`;
+            activity.querySelector(".message-content").textContent = "Generating response...";
+            chat.appendChild(activity);
+            chat.scrollTop = chat.scrollHeight;
         }
 
         function escapeHtml(value) {
@@ -154,6 +165,33 @@
             status.textContent = "Ready";
         }
 
+        async function waitForGeneration(generatingThreadIds) {
+            const pendingThreadIds = new Set(generatingThreadIds);
+
+            while (pendingThreadIds.size > 0) {
+                await delay(500);
+
+                const currentThreadIds = new Set(await getGeneratingThreads());
+
+                for (const threadId of pendingThreadIds) {
+                    if (currentThreadIds.has(threadId)) continue;
+
+                    if (threadId === activeThread) {
+                        renderMessages(await getMessages(activeThread));
+                    }
+
+                    pendingThreadIds.delete(threadId);
+                }
+            }
+
+            threads = (await getThreads()).sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+            renderThreads(threads);
+            busy = false;
+            sendButton.disabled = false;
+            setNavigationDisabled(false);
+            status.textContent = "Ready";
+        }
+
         newThreadButton.onclick = () => {
             if (busy) return;
             activeThread = null;
@@ -175,12 +213,8 @@
             resizeMessageInput();
             if (chat.querySelector(".empty")) chat.innerHTML = "";
             renderMessage({ role: "user", content: message });
-            const activity = document.createElement("article");
-            activity.className = "message assistant activity";
-            activity.innerHTML = `<div class="avatar">AI</div><div class="message-content"></div>`;
-            activity.querySelector(".message-content").textContent = "Generating response...";
-            chat.appendChild(activity);
-            chat.scrollTop = chat.scrollHeight;
+            renderGeneratingResponse();
+            const activity = chat.lastElementChild;
             status.textContent = "Thinking";
             try {
                 if (!activeThread) {
@@ -219,9 +253,18 @@
             if (threads.length) await selectThread(threads[0].id, threads[0].title, true);
             else showEmpty();
             if (busy) {
+                if (activeThread && generatingThreadIds.includes(activeThread)) {
+                    renderGeneratingResponse();
+                }
                 sendButton.disabled = true;
                 setNavigationDisabled(true);
                 status.textContent = "Thinking";
+                waitForGeneration(generatingThreadIds).catch(error => {
+                    busy = false;
+                    sendButton.disabled = false;
+                    setNavigationDisabled(false);
+                    status.textContent = error.message;
+                });
             }
         } catch (error) {
             status.textContent = error.message;
