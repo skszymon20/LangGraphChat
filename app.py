@@ -66,13 +66,14 @@ def create_thread(thread: ThreadCreate, db: Annotated[Session, Depends(get_db)])
         content=thread.first_message
     )
     new_thread.messages.append(message)
+    db.add(new_thread)
+    db.commit()
+
     new_assistant_message, tool_invocations = assistant_respond(message)
     new_assistant_message.tool_invocations = tool_invocations
     new_thread.messages.append(new_assistant_message)
-    
-    db.add(new_thread)
-    db.commit()
-    db.refresh(new_thread)
+    db.add(new_assistant_message)
+    db.flush()
 
     # update thread's updated_at timestamp
     new_thread.updated_at = new_assistant_message.created_at
