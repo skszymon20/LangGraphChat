@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LangGraphChat</title>
-    <link rel="stylesheet" href="/static/styles.css?v=2">
+    <link rel="stylesheet" href="/static/styles.css?v=3">
 </head>
 <body>
     <div class="app">
@@ -24,13 +24,13 @@
             </header>
             <section class="chat" id="chat" aria-live="polite"></section>
             <form class="composer" id="composer">
-                <input id="messageInput" maxlength="2048" autocomplete="off" placeholder="Ask anything..." aria-label="Message">
+                <textarea id="messageInput" maxlength="{{ max_user_message_length }}" rows="1" autocomplete="off" placeholder="Ask anything..." aria-label="Message"></textarea>
                 <button id="sendButton" type="submit">Send</button>
             </form>
         </main>
     </div>
     <script type="module">
-        import { createThread, deleteThread, formatDate, getMessages, getThreads, sendMessage } from "/static/utils.js?v=2";  // Cache busting with version query parameter (?v=2)
+        import { createThread, deleteThread, formatDate, getMessages, getThreads, sendMessage } from "/static/utils.js?v=3";  // Cache busting with version query parameter (?v=3)
 
         const chat = document.querySelector("#chat");
         const threadList = document.querySelector("#threadList");
@@ -43,6 +43,22 @@
         let activeThread = null;
         let threads = [];
         let busy = false;
+
+        function resizeMessageInput() {
+            input.style.height = "auto";
+            const maxHeight = 180;
+            input.style.height = `${Math.min(input.scrollHeight, maxHeight)}px`;
+            input.style.overflowY = input.scrollHeight > maxHeight ? "auto" : "hidden";
+        }
+
+        input.addEventListener("keydown", event => {
+            if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                composer.requestSubmit();
+            }
+        });
+        input.addEventListener("input", resizeMessageInput);
+        resizeMessageInput();
 
         function showEmpty() {
             chat.innerHTML = `<div class="empty"><h2>What will we explore?</h2><p>Start a conversation. Your threads and context will stay together here.</p></div>`;
@@ -97,9 +113,18 @@
                 row.append(selectButton, deleteButton);
                 threadList.appendChild(row);
             });
+            setNavigationDisabled(busy);
+        }
+
+        function setNavigationDisabled(disabled) {
+            newThreadButton.disabled = disabled;
+            threadList.querySelectorAll("button").forEach(button => {
+                button.disabled = disabled;
+            });
         }
 
         async function removeThread(thread) {
+            if (busy) return;
             if (!window.confirm(`Delete "${thread.title}"? This cannot be undone.`)) return;
             status.textContent = "Deleting";
             try {
@@ -118,6 +143,7 @@
         }
 
         async function selectThread(threadId, threadTitle) {
+            if (busy) return;
             activeThread = threadId;
             title.textContent = threadTitle;
             status.textContent = "Loading";
@@ -127,6 +153,7 @@
         }
 
         newThreadButton.onclick = () => {
+            if (busy) return;
             activeThread = null;
             title.textContent = "New conversation";
             status.textContent = "Ready";
@@ -141,8 +168,9 @@
             if (!message || busy) return;
             busy = true;
             sendButton.disabled = true;
-            newThreadButton.disabled = true;
+            setNavigationDisabled(true);
             input.value = "";
+            resizeMessageInput();
             if (chat.querySelector(".empty")) chat.innerHTML = "";
             renderMessage({ role: "user", content: message });
             const activity = document.createElement("article");
@@ -173,7 +201,7 @@
             } finally {
                 busy = false;
                 sendButton.disabled = false;
-                newThreadButton.disabled = false;
+                setNavigationDisabled(false);
                 input.focus();
             }
         };

@@ -1,10 +1,10 @@
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field, EmailStr
 from typing import Any, List
+from config import MAX_USER_MESSAGE_LENGTH
 
 
 class MessageBase(BaseModel):
-    content: str = Field(min_length=1, max_length=2048, description="The content of the message.")
     thread_id: str = Field(min_length=1, max_length=36, description="The ID of the thread this message belongs to.")
 
 class ToolInvocationResponse(BaseModel):
@@ -18,6 +18,7 @@ class ToolInvocationResponse(BaseModel):
 
 class MessageResponse(MessageBase):
     id: int
+    content: str = Field(min_length=1, description="The content of the message.")
     role: str = Field(min_length=1, max_length=9, description="The role of the message sender. Either 'user' or 'assistant'.")
     created_at: datetime
     tool_invocations: list[ToolInvocationResponse] = Field(default_factory=list)
@@ -25,7 +26,7 @@ class MessageResponse(MessageBase):
     model_config = ConfigDict(from_attributes=True) # Required in Pydantic v2
 
 class MessageCreate(MessageBase):
-    pass
+    content: str = Field(min_length=1, max_length=MAX_USER_MESSAGE_LENGTH, description="The content of a user message.")
 
 class ThreadBase(BaseModel):
     pass
@@ -40,7 +41,7 @@ class ThreadResponse(ThreadBase):
     model_config = ConfigDict(from_attributes=True) # Required in Pydantic v2
 
 class ThreadCreate(ThreadBase):
-    first_message: str = Field(min_length=1, max_length=2048, description="The first message, used to generate a title when no title is provided.")
+    first_message: str = Field(min_length=1, max_length=MAX_USER_MESSAGE_LENGTH, description="The first message, used to generate a title when no title is provided.")
     title: str | None = Field(default=None, min_length=1, max_length=53, description="The title of the thread. If not provided, it is generated from the first message.")
 
 class RAGFileResponse(BaseModel):

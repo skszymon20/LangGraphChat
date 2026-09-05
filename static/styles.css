@@ -12,7 +12,7 @@
 
 * { box-sizing: border-box; }
 body { margin: 0; height: 100vh; overflow: hidden; background: #f4f1ea; }
-button, input { font: inherit; }
+button, input, textarea { font: inherit; }
 button { cursor: pointer; }
 .app { display: grid; grid-template-columns: 280px 1fr; grid-template-rows: minmax(0, 1fr); height: 100vh; }
 .sidebar { display: flex; flex-direction: column; gap: 22px; padding: 24px 16px; color: #f8f5ed; background: #172321; }
@@ -53,9 +53,9 @@ button { cursor: pointer; }
     .activity { animation: none; }
 }
 .composer { display: flex; gap: 10px; padding: 18px clamp(18px, 8vw, 130px) 24px; background: var(--panel); }
-.composer input { min-width: 0; flex: 1; border: 1px solid #c9c6bd; border-radius: 7px; padding: 13px 14px; color: var(--ink); background: #fff; outline: none; }
-.composer input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px #d9654520; }
-.composer button { border: 0; border-radius: 7px; padding: 0 20px; color: #fff; background: var(--accent); font-weight: 700; }
+.composer textarea { min-width: 0; flex: 1; min-height: 48px; max-height: 180px; resize: none; overflow-y: hidden; border: 1px solid #c9c6bd; border-radius: 7px; padding: 13px 14px; color: var(--ink); background: #fff; outline: none; }
+.composer textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px #d9654520; }
+.composer button { align-self: flex-end; min-height: 48px; border: 0; border-radius: 7px; padding: 0 20px; color: #fff; background: var(--accent); font-weight: 700; }
 .composer button:hover { background: var(--accent-dark); }
 .composer button:disabled, .new-thread:disabled { cursor: wait; opacity: .55; }
 @media (max-width: 700px) {

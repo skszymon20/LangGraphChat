@@ -22,6 +22,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select
 from agent import get_agent
 from rag import delete_chroma_vector_storage
+from config import MAX_USER_MESSAGE_LENGTH
 
 
 load_dotenv()
@@ -40,7 +41,7 @@ async def home(request: Request):
     return templates.TemplateResponse(
         name="index.html",
         request=request,
-        context={}  # NOTE following not working: {"title": "LangGraphChat", "welcome_msg": "Hello World! How can I help you today?"}
+        context={"max_user_message_length": MAX_USER_MESSAGE_LENGTH}
     )
 
 @app.get("/api/threads", response_model=List[ThreadResponse])
