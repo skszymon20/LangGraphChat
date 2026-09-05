@@ -21,7 +21,7 @@ export const createThread = (message) => request("/api/threads", {
 });
 export const sendMessage = (threadId, content) => request("/api/messages", {
     method: "POST",
-    body: JSON.stringify({ thread_id: threadId, role: "user", content }),
+    body: JSON.stringify({ thread_id: threadId, content }),
 });
 
 export function formatDate(value) {

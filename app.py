@@ -221,7 +221,7 @@ def send_message(message: MessageCreate, db: Annotated[Session, Depends(get_db)]
 
     new_message = models.Message(
         thread_id=message.thread_id,
-        role=message.role,
+        role="user",
         content=message.content
     )
     db.add(new_message)

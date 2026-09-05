@@ -4,7 +4,6 @@ from typing import Any, List
 
 
 class MessageBase(BaseModel):
-    role: str = Field(min_length=1, max_length=9, description="The role of the message sender. Either 'user' or 'assistant'.")
     content: str = Field(min_length=1, max_length=2048, description="The content of the message.")
     thread_id: str = Field(min_length=1, max_length=36, description="The ID of the thread this message belongs to.")
 
@@ -19,6 +18,7 @@ class ToolInvocationResponse(BaseModel):
 
 class MessageResponse(MessageBase):
     id: int
+    role: str = Field(min_length=1, max_length=9, description="The role of the message sender. Either 'user' or 'assistant'.")
     created_at: datetime
     tool_invocations: list[ToolInvocationResponse] = Field(default_factory=list)
 
