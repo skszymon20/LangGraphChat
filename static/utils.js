@@ -15,9 +15,9 @@ export const getMessages = (threadId) => request(`/api/messages/${threadId}`);
 export const deleteThread = (threadId) => request(`/api/threads/${threadId}`, {
     method: "DELETE",
 });
-export const createThread = (message) => request("/api/threads", {
+export const createThread = (firstMessage, title = null) => request("/api/threads", {
     method: "POST",
-    body: JSON.stringify({ first_message: message }),
+    body: JSON.stringify({ first_message: firstMessage, ...(title ? { title } : {}) }),
 });
 export const sendMessage = (threadId, content) => request("/api/messages", {
     method: "POST",

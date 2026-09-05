@@ -40,8 +40,8 @@ class ThreadResponse(ThreadBase):
     model_config = ConfigDict(from_attributes=True) # Required in Pydantic v2
 
 class ThreadCreate(ThreadBase):
-    first_message: str = Field(min_length=1, max_length=2048, description="The first message of the thread.")
-    title: str | None = Field(default=None, min_length=1, max_length=53, description="The title of the thread. If not provided, it will be generated from the first message.")
+    first_message: str = Field(min_length=1, max_length=2048, description="The first message, used to generate a title when no title is provided.")
+    title: str | None = Field(default=None, min_length=1, max_length=53, description="The title of the thread. If not provided, it is generated from the first message.")
 
 class RAGFileResponse(BaseModel):
     id: int

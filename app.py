@@ -50,33 +50,16 @@ def get_threads(db: Annotated[Session, Depends(get_db)]):
 
 @app.post("/api/threads", response_model=ThreadResponse, status_code=status.HTTP_201_CREATED)
 def create_thread(thread: ThreadCreate, db: Annotated[Session, Depends(get_db)]):
-    if not thread.title:
-        title = thread.first_message[:50] + "..." if len(thread.first_message) > 50 else thread.first_message
-    else:
+    if thread.title:
         title = thread.title
+    else:
+        title = thread.first_message[:50] + "..." if len(thread.first_message) > 50 else thread.first_message
+
     new_thread = models.Thread(
         id=str(uuid.uuid4()),
         title=title,
     )
-
-    # Add the first message
-    message = models.Message(
-        thread_id=new_thread.id,
-        role="user",
-        content=thread.first_message
-    )
-    new_thread.messages.append(message)
     db.add(new_thread)
-    db.commit()
-
-    new_assistant_message, tool_invocations = assistant_respond(message)
-    new_assistant_message.tool_invocations = tool_invocations
-    new_thread.messages.append(new_assistant_message)
-    db.add(new_assistant_message)
-    db.flush()
-
-    # update thread's updated_at timestamp
-    new_thread.updated_at = new_assistant_message.created_at
     db.commit()
     db.refresh(new_thread)
 

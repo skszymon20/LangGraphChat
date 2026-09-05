@@ -153,12 +153,16 @@
             chat.scrollTop = chat.scrollHeight;
             status.textContent = "Thinking";
             try {
-                const result = activeThread ? await sendMessage(activeThread, message) : await createThread(message);
-                if (!activeThread) activeThread = result.id;
-                title.textContent = result.title || title.textContent;
+                if (!activeThread) {
+                    const thread = await createThread(message);
+                    activeThread = thread.id;
+                    title.textContent = thread.title;
+                    threads = [thread, ...threads];
+                    renderThreads(threads);
+                }
+                const result = await sendMessage(activeThread, message);
                 activity.remove();
-                if (result.messages) renderMessages(result.messages);
-                else result.slice(1).forEach(renderMessage);
+                result.slice(1).forEach(renderMessage);
                 renderThreads(await getThreads());
                 status.textContent = "Ready";
             } catch (error) {
