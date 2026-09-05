@@ -30,7 +30,7 @@
         </main>
     </div>
     <script type="module">
-        import { createThread, deleteThread, formatDate, getMessages, getThreads, sendMessage } from "/static/utils.js?v=3";  // Cache busting with version query parameter (?v=3)
+        import { createThread, deleteThread, formatDate, getGeneratingThreads, getMessages, getThreads, sendMessage } from "/static/utils.js?v=4";  // Cache busting with version query parameter (?v=4)
 
         const chat = document.querySelector("#chat");
         const threadList = document.querySelector("#threadList");
@@ -118,6 +118,8 @@
 
         function setNavigationDisabled(disabled) {
             newThreadButton.disabled = disabled;
+            newThreadButton.classList.toggle("navigation-disabled", disabled);
+            threadList.classList.toggle("navigation-disabled", disabled);
             threadList.querySelectorAll("button").forEach(button => {
                 button.disabled = disabled;
             });
@@ -207,10 +209,20 @@
         };
 
         try {
-            threads = (await getThreads()).sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+            const [loadedThreads, generatingThreadIds] = await Promise.all([
+                getThreads(),
+                getGeneratingThreads(),
+            ]);
+            threads = loadedThreads.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+            busy = generatingThreadIds.length > 0;
             renderThreads(threads);
             if (threads.length) await selectThread(threads[0].id, threads[0].title);
             else showEmpty();
+            if (busy) {
+                sendButton.disabled = true;
+                setNavigationDisabled(true);
+                status.textContent = "Thinking";
+            }
         } catch (error) {
             status.textContent = error.message;
             showEmpty();

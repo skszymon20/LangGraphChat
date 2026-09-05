@@ -30,6 +30,17 @@ button { cursor: pointer; }
 .delete-thread svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
 .thread-row:hover, .thread-row:focus-within { background: #2b3b36; }
 .delete-thread:hover, .delete-thread:focus-visible { color: #ffd7ca; background: #633d35; }
+.navigation-disabled { cursor: wait; }
+.thread-list.navigation-disabled .thread-row:hover,
+.thread-list.navigation-disabled .thread-row:focus-within { background: transparent; }
+.thread-list.navigation-disabled .thread,
+.thread-list.navigation-disabled .delete-thread,
+.new-thread.navigation-disabled { color: #718079; opacity: .55; }
+.thread-list.navigation-disabled .thread:hover,
+.thread-list.navigation-disabled .thread.active,
+.thread-list.navigation-disabled .delete-thread:hover,
+.thread-list.navigation-disabled .delete-thread:focus-visible,
+.new-thread.navigation-disabled:hover { color: #718079; background: transparent; border-color: #60706a; }
 .main { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; min-width: 0; min-height: 0; overflow: hidden; }
 .header { display: flex; align-items: center; justify-content: space-between; min-height: 72px; padding: 0 34px; border-bottom: 1px solid var(--line); background: var(--panel); }
 .header h1 { margin: 0; font-size: 1rem; font-weight: 650; }

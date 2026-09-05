@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 import os
 import json
 import uuid
+from threading import Lock
 from pathlib import Path
 import uvicorn
 from fastapi import Depends, FastAPI, HTTPException, Request, UploadFile, File, Form
@@ -32,6 +33,8 @@ templates = Jinja2Templates(directory="templates/")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 Path("data").mkdir(exist_ok=True)
 Path("data/rag_files").mkdir(exist_ok=True)
+generating_threads: set[str] = set()
+generating_threads_lock = Lock()
 
 class ChatMessage(BaseModel):
     message: str
@@ -48,6 +51,11 @@ async def home(request: Request):
 def get_threads(db: Annotated[Session, Depends(get_db)]):
     threads = db.execute(select(models.Thread)).scalars().all()
     return threads
+
+@app.get("/api/threads/generating", response_model=List[str])
+def get_generating_threads():
+    with generating_threads_lock:
+        return list(generating_threads)
 
 @app.post("/api/threads", response_model=ThreadResponse, status_code=status.HTTP_201_CREATED)
 def create_thread(thread: ThreadCreate, db: Annotated[Session, Depends(get_db)]):
@@ -203,27 +211,43 @@ def send_message(message: MessageCreate, db: Annotated[Session, Depends(get_db)]
     if not thread:
         return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"detail": "Thread not found"})
 
-    new_message = models.Message(
-        thread_id=message.thread_id,
-        role="user",
-        content=message.content
-    )
-    db.add(new_message)
-    db.commit()
-    db.refresh(new_message)
+    with generating_threads_lock:
+        if message.thread_id in generating_threads:
+            return JSONResponse(
+                status_code=status.HTTP_409_CONFLICT,
+                content={"detail": "A response is already being generated for this thread."},
+            )
+        generating_threads.add(message.thread_id)
 
-    new_assistant_message, tool_invocations = assistant_respond(new_message)
-    new_assistant_message.tool_invocations = tool_invocations
+    try:
+        new_message = models.Message(
+            thread_id=message.thread_id,
+            role="user",
+            content=message.content
+        )
+        db.add(new_message)
 
-    db.add(new_assistant_message)
-    db.commit()
-    db.refresh(new_assistant_message)
+        db.commit()
+        db.refresh(new_message)
 
-    # update thread's updated_at timestamp
-    thread.updated_at = new_assistant_message.created_at
-    db.commit()
+        thread.updated_at = new_message.created_at
+        db.commit()
 
-    return [new_message, new_assistant_message]
+        new_assistant_message, tool_invocations = assistant_respond(new_message)
+        new_assistant_message.tool_invocations = tool_invocations
+
+        db.add(new_assistant_message)
+        db.commit()
+        db.refresh(new_assistant_message)
+
+        # update thread's updated_at timestamp
+        thread.updated_at = new_assistant_message.created_at
+        db.commit()
+
+        return [new_message, new_assistant_message]
+    finally:
+        with generating_threads_lock:
+            generating_threads.discard(message.thread_id)
 
 if __name__ == "__main__":
     uvicorn.run("app:app", host="127.0.0.1", port=8000, reload=True)

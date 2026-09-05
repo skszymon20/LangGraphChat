@@ -11,6 +11,7 @@ export async function request(path, options = {}) {
 }
 
 export const getThreads = () => request("/api/threads");
+export const getGeneratingThreads = () => request("/api/threads/generating");
 export const getMessages = (threadId) => request(`/api/messages/${threadId}`);
 export const deleteThread = (threadId) => request(`/api/threads/${threadId}`, {
     method: "DELETE",
