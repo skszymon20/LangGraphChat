@@ -24,6 +24,7 @@ from sqlalchemy import select
 from agent import get_agent
 from rag import delete_chroma_vector_storage
 from config import MAX_USER_MESSAGE_LENGTH
+from datetime import UTC, datetime
 
 
 load_dotenv()
@@ -109,6 +110,9 @@ async def upload_file(
     ).scalars().first()
     if not thread:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Thread not found")
+
+    thread.updated_at = datetime.now(UTC)
+    db.commit()
 
     original_name = Path(file.filename or "").name
     extension = Path(original_name).suffix.lower()
