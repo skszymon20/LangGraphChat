@@ -23,7 +23,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select
 from agent import get_agent
 from rag import delete_chroma_vector_storage
-from config import MAX_USER_MESSAGE_LENGTH
+from config import MAX_USER_MESSAGE_LENGTH, SUPPORTED_FILE_EXTENSIONS
 from datetime import UTC, datetime
 
 
@@ -45,7 +45,10 @@ async def home(request: Request):
     return templates.TemplateResponse(
         name="index.html",
         request=request,
-        context={"max_user_message_length": MAX_USER_MESSAGE_LENGTH}
+        context={
+            "max_user_message_length": MAX_USER_MESSAGE_LENGTH,
+            "supported_file_extensions": ",".join(SUPPORTED_FILE_EXTENSIONS),
+        }
     )
 
 @app.get("/api/threads", response_model=List[ThreadResponse])
@@ -116,11 +119,10 @@ async def upload_file(
 
     original_name = Path(file.filename or "").name
     extension = Path(original_name).suffix.lower()
-    supported_extensions = {".pdf", ".docx", ".txt", ".md", ".py", ".csv", ".json"}
-    if not original_name or extension not in supported_extensions:
+    if not original_name or extension not in SUPPORTED_FILE_EXTENSIONS:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Unsupported file type. Supported types: PDF, DOCX, TXT, MD, PY, CSV, JSON.",
+            detail=f"Unsupported file type. Supported types: {', '.join(extension.upper().lstrip('.') for extension in SUPPORTED_FILE_EXTENSIONS)}.",
         )
 
     stored_name = f"{uuid.uuid4()}{extension}"

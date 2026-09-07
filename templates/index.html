@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LangGraphChat</title>
-    <link rel="stylesheet" href="/static/styles.css?v=3">
+    <link rel="stylesheet" href="/static/styles.css?v=4">
 </head>
 <body>
     <div class="app">
@@ -24,25 +24,32 @@
             </header>
             <section class="chat" id="chat" aria-live="polite"></section>
             <form class="composer" id="composer">
+                <input id="fileInput" type="file" accept="{{ supported_file_extensions }}" hidden>
+                <button id="attachButton" class="attach-button" type="button" title="Upload a document" aria-label="Upload a document">
+                    <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false"><path d="M12 5v14M5 12h14" /></svg>
+                </button>
                 <textarea id="messageInput" maxlength="{{ max_user_message_length }}" rows="1" autocomplete="off" placeholder="Ask anything..." aria-label="Message"></textarea>
                 <button id="sendButton" type="submit">Send</button>
             </form>
         </main>
     </div>
     <script type="module">
-        import { createThread, deleteThread, formatDate, getGeneratingThreads, getMessages, getThreads, sendMessage } from "/static/utils.js?v=4";  // Cache busting with version query parameter (?v=4)
+        import { createThread, deleteThread, formatDate, getGeneratingThreads, getMessages, getThreads, sendMessage, uploadFile } from "/static/utils.js?v=5";
 
         const chat = document.querySelector("#chat");
         const threadList = document.querySelector("#threadList");
         const input = document.querySelector("#messageInput");
         const composer = document.querySelector("#composer");
         const sendButton = document.querySelector("#sendButton");
+        const attachButton = document.querySelector("#attachButton");
+        const fileInput = document.querySelector("#fileInput");
         const newThreadButton = document.querySelector("#newThread");
         const title = document.querySelector("#threadTitle");
         const status = document.querySelector("#status");
         let activeThread = null;
         let threads = [];
         let busy = false;
+        let uploading = false;
 
         const delay = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
 
@@ -61,6 +68,9 @@
         });
         input.addEventListener("input", resizeMessageInput);
         resizeMessageInput();
+        attachButton.onclick = () => {
+            if (!busy && !uploading) fileInput.click();
+        };
 
         function showEmpty() {
             chat.innerHTML = `<div class="empty"><h2>What will we explore?</h2><p>Start a conversation. Your threads and context will stay together here.</p></div>`;
@@ -136,6 +146,44 @@
             });
         }
 
+        function setUploadDisabled(disabled) {
+            attachButton.disabled = disabled;
+            attachButton.classList.toggle("navigation-disabled", disabled);
+        }
+
+        fileInput.onchange = async () => {
+            const file = fileInput.files[0];
+            if (!file || busy || uploading) return;
+
+            uploading = true;
+            setUploadDisabled(true);
+            status.textContent = "Uploading";
+            try {
+                const supportedExtensions = "{{ supported_file_extensions }}".split(",");
+                const extension = file.name.slice(file.name.lastIndexOf(".")).toLowerCase();
+                if (!supportedExtensions.includes(extension)) {
+                    throw new Error(`Unsupported file type. Supported types: ${supportedExtensions.map(extension => extension.slice(1).toUpperCase()).join(", ")}.`);
+                }
+                if (!activeThread) {
+                    const thread = await createThread(`Uploaded file: ${file.name}`, file.name.slice(0, 53));
+                    activeThread = thread.id;
+                    title.textContent = thread.title;
+                    threads = [thread, ...threads];
+                    renderThreads(threads);
+                }
+                await uploadFile(activeThread, file);
+                status.textContent = `Uploaded ${file.name}`;
+                threads = await getThreads();
+                renderThreads(threads);
+            } catch (error) {
+                status.textContent = error.message;
+            } finally {
+                fileInput.value = "";
+                uploading = false;
+                setUploadDisabled(false);
+            }
+        };
+
         async function removeThread(thread) {
             if (busy) return;
             if (!window.confirm(`Delete "${thread.title}"? This cannot be undone.`)) return;
@@ -193,7 +241,7 @@
         }
 
         newThreadButton.onclick = () => {
-            if (busy) return;
+            if (busy || uploading) return;
             activeThread = null;
             title.textContent = "New conversation";
             status.textContent = "Ready";
@@ -205,7 +253,7 @@
         composer.onsubmit = async event => {
             event.preventDefault();
             const message = input.value.trim();
-            if (!message || busy) return;
+            if (!message || busy || uploading) return;
             busy = true;
             sendButton.disabled = true;
             setNavigationDisabled(true);

@@ -8,6 +8,7 @@ from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from pypdf import PdfReader
 import docx2txt
+from config import SUPPORTED_FILE_EXTENSIONS
 
 
 load_dotenv()
@@ -24,21 +25,22 @@ vectorstore = Chroma(
 def read_file_text(file_path: str) -> str:
     """
     Reads the text content from a file based on its extension.
-    Supports .pdf, .docx, .txt, .md, .py, .csv, and .json files.
+    Supported extensions are defined by SUPPORTED_FILE_EXTENSIONS in config.py.
     """
-    if file_path.endswith(".pdf"):
+    extension = Path(file_path).suffix.lower()
+    if extension not in SUPPORTED_FILE_EXTENSIONS:
+        raise ValueError(f"Unsupported file type: {file_path}")
+    if extension == ".pdf":
         reader = PdfReader(file_path)
         text = ""
         for page in reader.pages:
             text += (page.extract_text() or "") + "\n"
         return text
-    elif file_path.endswith(".docx"):
+    elif extension == ".docx":
         return docx2txt.process(file_path)
-    elif file_path.endswith((".txt", ".md", ".py", ".csv", ".json")):
+    else:
         with open(file_path, "r", encoding="utf-8") as f:
             return f.read()
-    else:
-        raise ValueError(f"Unsupported file type: {file_path}")
 
 def add_doc_to_rag(file_path: str, thread_id: str) -> str:
     """
