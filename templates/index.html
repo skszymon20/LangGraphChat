@@ -110,7 +110,7 @@
         function renderThreads(nextThreads) {
             threads = nextThreads;
             threadList.innerHTML = "";
-            [...threads].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at)).forEach(thread => {
+            threads.forEach(thread => {
                 const row = document.createElement("div");
                 row.className = "thread-row";
 
@@ -232,7 +232,7 @@
                 }
             }
 
-            threads = (await getThreads()).sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+            threads = await getThreads();
             renderThreads(threads);
             busy = false;
             sendButton.disabled = false;
@@ -295,7 +295,7 @@
                 getThreads(),
                 getGeneratingThreads(),
             ]);
-            threads = loadedThreads.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+            threads = loadedThreads;
             busy = generatingThreadIds.length > 0;
             renderThreads(threads);
             if (threads.length) await selectThread(threads[0].id, threads[0].title, true);

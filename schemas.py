@@ -1,6 +1,6 @@
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict, Field, EmailStr
-from typing import Any, List
+from pydantic import BaseModel, ConfigDict, Field
+from typing import Any, List, Literal
 from config import MAX_USER_MESSAGE_LENGTH
 
 
@@ -47,8 +47,26 @@ class ThreadCreate(ThreadBase):
 class RAGFileResponse(BaseModel):
     id: int
     file_name: str
+    original_file_name: str
     thread_id: str
     created_at: datetime
     file_path: str
 
     model_config = ConfigDict(from_attributes=True)
+
+class UploadingFileResponse(BaseModel):
+    upload_id: str
+    thread_id: str
+    original_file_name: str
+
+class ConversationItemResponse(BaseModel):
+    type: Literal["message", "file"]
+    id: int
+    thread_id: str
+    created_at: datetime
+    role: str | None = None
+    content: str | None = None
+    tool_invocations: list[ToolInvocationResponse] = Field(default_factory=list)
+    file_name: str | None = None
+    original_file_name: str | None = None
+    file_path: str | None = None

@@ -17,7 +17,15 @@ from pydantic import BaseModel
 from fastapi import status
 from typing import Annotated, List
 from database import get_db, Base, engine
-from schemas import MessageResponse, MessageCreate, ThreadResponse, ThreadCreate, RAGFileResponse
+from schemas import (
+    ConversationItemResponse,
+    MessageResponse,
+    MessageCreate,
+    ThreadResponse,
+    ThreadCreate,
+    RAGFileResponse,
+    UploadingFileResponse,
+)
 import models
 from sqlalchemy.orm import Session
 from sqlalchemy import select
@@ -36,6 +44,8 @@ Path("data").mkdir(exist_ok=True)
 Path("data/rag_files").mkdir(exist_ok=True)
 generating_threads: set[str] = set()
 generating_threads_lock = Lock()
+uploading_files: dict[str, dict[str, str]] = {}
+uploading_files_lock = Lock()
 
 class ChatMessage(BaseModel):
     message: str
@@ -53,13 +63,21 @@ async def home(request: Request):
 
 @app.get("/api/threads", response_model=List[ThreadResponse])
 def get_threads(db: Annotated[Session, Depends(get_db)]):
-    threads = db.execute(select(models.Thread)).scalars().all()
+    threads = db.execute(select(models.Thread).order_by(models.Thread.updated_at.desc())).scalars().all()
     return threads
 
 @app.get("/api/threads/generating", response_model=List[str])
 def get_generating_threads():
     with generating_threads_lock:
         return list(generating_threads)
+
+@app.get("/api/files/uploading", response_model=List[UploadingFileResponse])
+def get_uploading_files():
+    with uploading_files_lock:
+        return [
+            {"upload_id": upload_id, **upload}
+            for upload_id, upload in uploading_files.items()
+        ]
 
 @app.post("/api/threads", response_model=ThreadResponse, status_code=status.HTTP_201_CREATED)
 def create_thread(thread: ThreadCreate, db: Annotated[Session, Depends(get_db)]):
@@ -127,6 +145,12 @@ async def upload_file(
 
     stored_name = f"{uuid.uuid4()}{extension}"
     file_path = Path("data/rag_files") / stored_name
+    upload_id = stored_name
+    with uploading_files_lock:
+        uploading_files[upload_id] = {
+            "thread_id": thread_id,
+            "original_file_name": original_name,
+        }
     try:
         file_path.write_bytes(await file.read())
         rag_result = add_doc_to_rag(str(file_path), thread_id)
@@ -136,6 +160,7 @@ async def upload_file(
 
         rag_file = models.RAGFile(
             file_name=stored_name,
+            original_file_name=original_name,
             thread_id=thread_id,
         )
         db.add(rag_file)
@@ -153,7 +178,23 @@ async def upload_file(
         file_path.unlink(missing_ok=True)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(error)) from error
     finally:
+        with uploading_files_lock:
+            uploading_files.pop(upload_id, None)
         await file.close()
+
+@app.get("/api/files/{thread_id}", response_model=List[RAGFileResponse])
+def get_files(thread_id: str, db: Annotated[Session, Depends(get_db)]):
+    thread = db.execute(
+        select(models.Thread).where(models.Thread.id == thread_id)
+    ).scalars().first()
+    if not thread:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Thread not found")
+
+    return db.execute(
+        select(models.RAGFile)
+        .where(models.RAGFile.thread_id == thread_id)
+        .order_by(models.RAGFile.created_at)
+    ).scalars().all()
 
 @app.get("/api/messages/{thread_id}", response_model=List[MessageResponse])
 def get_messages(thread_id: str, db: Annotated[Session, Depends(get_db)]):
@@ -161,6 +202,46 @@ def get_messages(thread_id: str, db: Annotated[Session, Depends(get_db)]):
         select(models.Message).where(models.Message.thread_id == thread_id)
     ).scalars().all()
     return messages
+
+@app.get("/api/conversation/{thread_id}", response_model=List[ConversationItemResponse])
+def get_conversation(thread_id: str, db: Annotated[Session, Depends(get_db)]):
+    thread = db.execute(
+        select(models.Thread).where(models.Thread.id == thread_id)
+    ).scalars().first()
+    if not thread:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Thread not found")
+
+    messages = db.execute(
+        select(models.Message).where(models.Message.thread_id == thread_id)
+    ).scalars().all()
+    files = db.execute(
+        select(models.RAGFile).where(models.RAGFile.thread_id == thread_id)
+    ).scalars().all()
+    items = [
+        {
+            "type": "message",
+            "id": message.id,
+            "thread_id": message.thread_id,
+            "created_at": message.created_at,
+            "role": message.role,
+            "content": message.content,
+            "tool_invocations": message.tool_invocations,
+        }
+        for message in messages
+    ]
+    items.extend(
+        {
+            "type": "file",
+            "id": rag_file.id,
+            "thread_id": rag_file.thread_id,
+            "created_at": rag_file.created_at,
+            "file_name": rag_file.file_name,
+            "original_file_name": rag_file.original_file_name,
+            "file_path": rag_file.file_path,
+        }
+        for rag_file in files
+    )
+    return sorted(items, key=lambda item: item["created_at"])
 
 def assistant_respond(message: models.Message):
     agent = get_agent()
