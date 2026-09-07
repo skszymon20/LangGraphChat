@@ -61,6 +61,7 @@ def add_doc_to_rag(file_path: str, thread_id: str) -> str:
         vectorstore.add_documents(documents)
         return f"Document '{file_path}' added to RAG successfully with {len(chunks)} chunks."
     except Exception as e:
+        delete_chroma_vector_storage_for_file(thread_id, file_path)
         return f"Error adding document to RAG: {e}"
 
 def retrieve_from_rag(query: str, thread_id: str, top_k: int = 5) -> str:
@@ -84,3 +85,11 @@ def delete_chroma_vector_storage(thread_id: str) -> None:
     if not thread_id:
         raise ValueError("thread_id must not be empty")
     vectorstore.delete(where={"thread_id": thread_id})
+
+def delete_chroma_vector_storage_for_file(thread_id: str, file_path: str) -> None:
+    """Delete all RAG documents and embeddings belonging to one file in a thread."""
+    if not thread_id:
+        raise ValueError("thread_id must not be empty")
+    if not file_path:
+        raise ValueError("file_path must not be empty")
+    vectorstore.delete(where={"$and": [{"thread_id": thread_id}, {"source": file_path}]})
