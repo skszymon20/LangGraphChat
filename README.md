@@ -25,7 +25,7 @@ flowchart LR
     API --> DB[(SQLite\nhistory.db)]
     API --> Graph[LangGraph agent]
     Graph --> Gemini[Google Gemini]
-    <!-- Graph Tools[Calculator\nTavily search\nMemory\nRAG] -->
+    Graph --> Tools[Calculator\nTavily search\nMemory\nRAG]
     Graph --> Checkpoints[(SQLite\nLangGraph checkpoints)]
     API --> Files[data/rag_files]
     Files --> Embeddings[Gemini embeddings]
@@ -121,6 +121,12 @@ TAVILY_API_KEY=your_tavily_api_key
 
 # Optional. Defaults to gemini-3.5-flash-lite.
 GOOGLE_MODEL=gemini-3.5-flash-lite
+
+# Moreover you can configure LANGSMITH tracing of the application
+LANGSMITH_TRACING="true"
+LANGSMITH_ENDPOINT=your_langsmith_endpoint_url
+LANGSMITH_API_KEY=your_langsmith_api_key
+LANGSMITH_PROJECT=your_langsmit_project_name
 ```
 
 Supported model values are:
