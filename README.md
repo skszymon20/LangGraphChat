@@ -126,7 +126,7 @@ GOOGLE_MODEL=gemini-3.5-flash-lite
 LANGSMITH_TRACING="true"
 LANGSMITH_ENDPOINT=your_langsmith_endpoint_url
 LANGSMITH_API_KEY=your_langsmith_api_key
-LANGSMITH_PROJECT=your_langsmit_project_name
+LANGSMITH_PROJECT=your_langsmith_project_name
 ```
 
 Supported model values are:
