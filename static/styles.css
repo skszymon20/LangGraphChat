@@ -53,6 +53,10 @@ button { cursor: pointer; }
 .avatar { flex: 0 0 30px; height: 30px; border-radius: 50%; color: #fff; background: var(--accent); font-size: .72rem; line-height: 30px; text-align: center; }
 .message.user .avatar { color: var(--ink); background: #d9d3c7; }
 .message-content { min-width: 0; white-space: pre-wrap; line-height: 1.6; overflow-wrap: anywhere; }
+.file-message { align-items: center; margin-bottom: 18px; }
+.file-avatar { color: #fff; background: #60706a; font-size: 1rem; }
+.file-message strong, .file-message a, .file-message span { display: block; }
+.file-message span { margin-top: 4px; color: var(--muted); font-size: .78rem; }
 .tool-use { margin-top: 9px; color: var(--accent-dark); font-size: .78rem; }
 .activity { animation: thinking-pulse 1.6s ease-in-out infinite; }
 .activity .message-content { color: var(--accent-dark); font-size: .78rem; }

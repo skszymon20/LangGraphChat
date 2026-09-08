@@ -34,7 +34,7 @@
         </main>
     </div>
     <script type="module">
-        import { createThread, deleteThread, formatDate, getGeneratingThreads, getMessages, getThreads, sendMessage, uploadFile } from "/static/utils.js?v=5";
+        import { createThread, deleteThread, formatDate, getConversation, getGeneratingThreads, getThreads, getUploadingFiles, sendMessage, uploadFile } from "/static/utils.js?v=6";
 
         const chat = document.querySelector("#chat");
         const threadList = document.querySelector("#threadList");
@@ -76,11 +76,17 @@
             chat.innerHTML = `<div class="empty"><h2>What will we explore?</h2><p>Start a conversation. Your threads and context will stay together here.</p></div>`;
         }
 
-        function renderMessages(messages) {
+        function renderConversation(conversation, activeUploads = []) {
             chat.innerHTML = "";
-            if (!messages.length) return showEmpty();
-            messages.forEach(renderMessage);
+            if (!conversation.length && !activeUploads.length) return showEmpty();
+            conversation.forEach(renderConversationItem);
+            activeUploads.forEach(renderUploadingFile);
             chat.scrollTop = chat.scrollHeight;
+        }
+
+        function renderConversationItem(item) {
+            if (item.type === "file") return renderFile(item);
+            renderMessage(item);
         }
 
         function renderMessage(message) {
@@ -91,6 +97,20 @@
                 ? `<div class="tool-use">Used: ${message.tool_invocations.map(tool => escapeHtml(tool.name)).join(", ")}</div>`
                 : "";
             item.innerHTML = `<div class="avatar">${label}</div><div class="message-content">${escapeHtml(message.content)}${tools}</div>`;
+            chat.appendChild(item);
+        }
+
+        function renderFile(file) {
+            const item = document.createElement("article");
+            item.className = "message file-message";
+            item.innerHTML = `<div class="avatar file-avatar" aria-hidden="true">+</div><div class="message-content"><strong>${escapeHtml(file.original_file_name)}</strong><span>Uploaded document</span></div>`;
+            chat.appendChild(item);
+        }
+
+        function renderUploadingFile(file) {
+            const item = document.createElement("article");
+            item.className = "message file-message activity";
+            item.innerHTML = `<div class="avatar file-avatar" aria-hidden="true">+</div><div class="message-content"><strong>${escapeHtml(file.original_file_name)}</strong><span>Uploading...</span></div>`;
             chat.appendChild(item);
         }
 
@@ -171,10 +191,19 @@
                     threads = [thread, ...threads];
                     renderThreads(threads);
                 }
-                await uploadFile(activeThread, file);
+
+                // upload file, then render uploading file message, then, after awaiting update the status
+                const uploadingFile = { thread_id: activeThread, original_file_name: file.name };
+                const uploadRequest = uploadFile(activeThread, file);
+                renderUploadingFile(uploadingFile);
+                const activity = chat.lastElementChild;
+                await uploadRequest;
+                activity.remove();
+
                 status.textContent = `Uploaded ${file.name}`;
                 threads = await getThreads();
-                renderThreads(threads);
+                renderThreads(threads); //updates the order of the threads.
+                renderConversation(await getConversation(activeThread));
             } catch (error) {
                 status.textContent = error.message;
             } finally {
@@ -209,7 +238,11 @@
             title.textContent = threadTitle;
             status.textContent = "Loading";
             renderThreads(threads);
-            renderMessages(await getMessages(threadId));
+            const [conversation, activeUploads] = await Promise.all([
+                getConversation(threadId),
+                getUploadingFiles(),
+            ]);
+            renderConversation(conversation, activeUploads.filter(file => file.thread_id === threadId));
             status.textContent = "Ready";
         }
 
@@ -225,7 +258,11 @@
                     if (currentThreadIds.has(threadId)) continue;
 
                     if (threadId === activeThread) {
-                        renderMessages(await getMessages(activeThread));
+                        const [conversation, activeUploads] = await Promise.all([
+                            getConversation(activeThread),
+                            getUploadingFiles(),
+                        ]);
+                        renderConversation(conversation, activeUploads.filter(file => file.thread_id === activeThread));
                     }
 
                     pendingThreadIds.delete(threadId);
@@ -275,7 +312,8 @@
                 const result = await sendMessage(activeThread, message);
                 activity.remove();
                 result.slice(1).forEach(renderMessage);
-                renderThreads(await getThreads());
+                
+                renderThreads(await getThreads());  //updates the order of the threads.
                 status.textContent = "Ready";
             } catch (error) {
                 activity.classList.remove("activity");  // NOTE : Remove the "activity" class to indicate that the response generation has failed. Now the "The request could not be completed." is not in changing opacity text.

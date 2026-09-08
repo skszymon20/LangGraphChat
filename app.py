@@ -13,7 +13,6 @@ from langchain_core.messages import HumanMessage, AIMessage, AIMessageChunk, Too
 from agent import get_agent
 from rag import add_doc_to_rag
 from tools import set_curr_thread_id
-from pydantic import BaseModel
 from fastapi import status
 from typing import Annotated, List
 from database import get_db, Base, engine
@@ -46,9 +45,6 @@ generating_threads: set[str] = set()
 generating_threads_lock = Lock()
 uploading_files: dict[str, dict[str, str]] = {}
 uploading_files_lock = Lock()
-
-class ChatMessage(BaseModel):
-    message: str
 
 @app.get("/")
 async def home(request: Request):

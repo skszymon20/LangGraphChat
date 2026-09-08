@@ -24,6 +24,8 @@ export async function uploadFile(threadId, file) {
 export const getThreads = () => request("/api/threads");
 export const getGeneratingThreads = () => request("/api/threads/generating");
 export const getMessages = (threadId) => request(`/api/messages/${threadId}`);
+export const getConversation = (threadId) => request(`/api/conversation/${threadId}`);
+export const getUploadingFiles = () => request("/api/files/uploading");
 export const deleteThread = (threadId) => request(`/api/threads/${threadId}`, {
     method: "DELETE",
 });
