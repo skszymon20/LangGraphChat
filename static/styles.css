@@ -71,7 +71,7 @@ button { cursor: pointer; }
 .composer .attach-button { align-self: flex-end; display: grid; width: 48px; min-width: 48px; min-height: 48px; place-items: center; border: 1px solid #c9c6bd; border-radius: 7px; padding: 0; color: var(--muted); background: #fff; }
 .attach-button svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-width: 1.8; }
 .composer .attach-button:hover { color: var(--accent-dark); border-color: var(--accent); background: #fff; }
-.attach-button:disabled { cursor: wait; opacity: .55; }
+.attach-button:disabled { cursor: not-allowed; opacity: .35; }
 .composer textarea { min-width: 0; flex: 1; min-height: 48px; max-height: 180px; resize: none; overflow-y: hidden; border: 1px solid #c9c6bd; border-radius: 7px; padding: 13px 14px; color: var(--ink); background: #fff; outline: none; }
 .composer textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px #d9654520; }
 .composer button { align-self: flex-end; min-height: 48px; border: 0; border-radius: 7px; padding: 0 20px; color: #fff; background: var(--accent); font-weight: 700; }

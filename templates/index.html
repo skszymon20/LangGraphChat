@@ -169,6 +169,7 @@
         function setUploadDisabled(disabled) {
             attachButton.disabled = disabled;
             attachButton.classList.toggle("navigation-disabled", disabled);
+            attachButton.title = disabled ? "File uploads are unavailable while the assistant is responding" : "Upload a document";
         }
 
         fileInput.onchange = async () => {
@@ -273,6 +274,7 @@
             renderThreads(threads);
             busy = false;
             sendButton.disabled = false;
+            setUploadDisabled(false);
             setNavigationDisabled(false);
             status.textContent = "Ready";
         }
@@ -293,6 +295,7 @@
             if (!message || busy || uploading) return;
             busy = true;
             sendButton.disabled = true;
+            setUploadDisabled(true);
             setNavigationDisabled(true);
             input.value = "";
             resizeMessageInput();
@@ -323,6 +326,7 @@
             } finally {
                 busy = false;
                 sendButton.disabled = false;
+                setUploadDisabled(false);
                 setNavigationDisabled(false);
                 input.focus();
             }
@@ -343,11 +347,13 @@
                     renderGeneratingResponse();
                 }
                 sendButton.disabled = true;
+                setUploadDisabled(true);
                 setNavigationDisabled(true);
                 status.textContent = "Thinking";
                 waitForGeneration(generatingThreadIds).catch(error => {
                     busy = false;
                     sendButton.disabled = false;
+                    setUploadDisabled(false);
                     setNavigationDisabled(false);
                     status.textContent = error.message;
                 });
