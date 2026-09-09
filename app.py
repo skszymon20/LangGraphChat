@@ -111,7 +111,7 @@ def delete_thread(thread_id: str, db: Annotated[Session, Depends(get_db)]):
     for rag_file in thread.rag_files:
         file_path = (rag_files_directory / rag_file.file_name).resolve()
         if rag_files_directory in file_path.parents:
-            file_path.unlink()  # NOTE probably missing_ok not needed. WAS: (missing_ok=True)
+            file_path.unlink(missing_ok=True)  #NOTE when restarting the server the files my disappear (e.g. due to scaling, the server may e.g. shutdown), so we use missing_ok=True to avoid errors if the file is already deleted. It will be useful in future, when we could use google's cloud run
     
     db.delete(thread)
     db.commit()

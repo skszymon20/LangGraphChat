@@ -38,7 +38,7 @@ When a user sends a message, the API stores it in the current thread and invokes
 
 ### Backend
 
-- **Python 3.11+**: Application runtime.
+- **Python 3.14+**: Application runtime.
 - **FastAPI**: HTTP API, request validation, file uploads, and server-rendered entry point.
 - **Uvicorn**: Local ASGI server.
 - **Jinja2**: HTML template rendering.
@@ -69,7 +69,7 @@ When a user sends a message, the API stores it in the current thread and invokes
 
 ## Requirements
 
-- Python 3.11 or newer.
+- Python 3.14 or newer.
 - A Google AI API key with access to the configured Gemini model.
 - A Tavily API key if web search is used.
 - Conda is optional; any Python virtual environment is supported.
@@ -88,7 +88,7 @@ cd LangGraphChat
 Using Conda:
 
 ```bash
-conda create -n langgraphchat python=3.11 -y
+conda create -n langgraphchat python=3.14 -y
 conda activate langgraphchat
 ```
 
@@ -123,7 +123,7 @@ TAVILY_API_KEY=your_tavily_api_key
 GOOGLE_MODEL=gemini-3.5-flash-lite
 
 # Moreover you can configure LANGSMITH tracing of the application
-LANGSMITH_TRACING="true"
+LANGSMITH_TRACING=true
 LANGSMITH_ENDPOINT=your_langsmith_endpoint_url
 LANGSMITH_API_KEY=your_langsmith_api_key
 LANGSMITH_PROJECT=your_langsmith_project_name
