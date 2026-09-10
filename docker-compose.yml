@@ -1,0 +1,22 @@
+services:
+  web:
+    build: .
+    image: langgraph-chat:latest
+    container_name: langgraph-chat-container
+    ports:
+      - "8080:8080"  # Access locally at http://localhost:8080
+    environment:
+      - PORT=8080
+      - DATA_DIR
+      - GOOGLE_API_KEY
+      - GOOGLE_MODEL
+      - TAVILY_API_KEY
+      - LANGSMITH_TRACING
+      - LANGSMITH_ENDPOINT
+      - LANGSMITH_API_KEY
+      - LANGSMITH_PROJECT
+    volumes:
+      - langgraph-chat-data:/app/data
+
+volumes:
+  langgraph-chat-data:
