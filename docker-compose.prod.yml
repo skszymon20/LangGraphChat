@@ -1,0 +1,19 @@
+services:
+  web:
+    image: us-central1-docker.pkg.dev/langgraphchat/langgraphchat-repo/langgraphchat-app:latest
+    container_name: langgraphchat-container
+    ports:
+      - "8080:8080"
+    environment:
+      - DATA_DIR=/app/data
+      - GOOGLE_MODEL=gemini-3.5-flash-lite
+      - LANGSMITH_TRACING=true
+      - LANGSMITH_ENDPOINT=https://api.smith.langchain.com
+      - LANGSMITH_PROJECT=LangGraphChatDeployed
+    env_file:
+      - .env
+    volumes:
+      - langgraphchat-data:/app/data
+
+volumes:
+  langgraphchat-data:

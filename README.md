@@ -17,6 +17,9 @@ The application is designed as a small, self-contained project that can be run o
 - Delete a thread together with its messages, memories, uploaded files, and associated Chroma vectors.
 - Use a responsive browser interface served directly by FastAPI.
 
+## Live demo of the app
+Currently the live demo of the app is available at http://35.224.4.0:8080/
+
 ## How It Works
 
 ```mermaid
