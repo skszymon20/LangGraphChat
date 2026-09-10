@@ -12,14 +12,15 @@ from config import SUPPORTED_FILE_EXTENSIONS
 
 
 load_dotenv()
-Path("chroma_vector_storage").mkdir(exist_ok=True)
+DATA_DIR = os.getenv("DATA_DIR")
+Path(DATA_DIR).mkdir(exist_ok=True)
 
 embeddings = GoogleGenerativeAIEmbeddings(model="gemini-embedding-001")
 
 vectorstore = Chroma(
     collection_name="documents",
     embedding_function=embeddings,
-    persist_directory="chroma_vector_storage"
+    persist_directory=DATA_DIR
 )
 
 def read_file_text(file_path: str) -> str:

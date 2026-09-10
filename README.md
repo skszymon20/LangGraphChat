@@ -199,7 +199,7 @@ FastAPI's interactive API documentation is available at `/docs` while the server
 ├── data/history.db                  # Application database, created at runtime
 ├── data/langgraph_ckpts.sqlite       # Agent checkpoints, created at runtime
 ├── data/rag_files/                   # Uploaded source files, created at runtime
-└── chroma_vector_storage/            # Persistent Chroma data, created at runtime
+└── data/chroma.sqlite3/              # Persistent Chroma data, created at runtime
 ```
 
 Runtime data directories are intentionally local and should be backed up or excluded from source control according to your deployment needs.

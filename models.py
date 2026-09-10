@@ -2,8 +2,10 @@ from datetime import UTC, datetime
 from sqlalchemy import Integer, String, Text, DateTime, ForeignKey, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from database import Base
+import os
 
 
+DATA_DIR = os.getenv("DATA_DIR")
 class Thread(Base):
     __tablename__ = "threads"
 
@@ -68,4 +70,4 @@ class RAGFile(Base):
 
     @property
     def file_path(self) -> str:
-        return f"data/rag_files/{self.file_name}"
+        return f"{DATA_DIR}/rag_files/{self.file_name}"
